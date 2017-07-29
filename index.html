@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+   <meta charset="utf-8">
+   <meta http-equiv="x-ua-compatible" content="ie=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+   <title>Wizardry Javascript Library</title>
+
+   <link rel="stylesheet" type="text/css" href="css/example.css">
+</head>
+
+<body>
+   <center><div id="container"></div><center>
+
+   <!-- Templates -->
+   <script type="text/x-mustache" id="template1">
+      <div class="panel">
+         <h1>Step {{step}}</h1>
+         <p>Message: {{message}}</p>
+         <center>
+            <img src="images/image{{step}}.jpg" height="64px">
+         </center>
+         <br>
+
+         <button class="wizardry-previous-control">Previous</button>
+         <button class="wizardry-restart-control">Restart</button>
+         <button class="wizardry-next-control">Continue</button>
+      </div>
+   </script>
+
+   <!-- Javascript -->
+   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/2.3.0/mustache.min.js"></script>
+   <script type="text/javascript" src="js/wizardry-0.0.1.min.js"></script>
+   <script type="text/javascript">
+      var configuration = [
+         {onEnter:   function(state) {
+                        console.log("Step 1 onEnter() called. State:", state);
+                        state.step = 1;
+                        state.message = "This is step 1.";
+                     },
+          onExit:    function(state) {
+                        console.log("Step 1 onExit() called. State:", state);
+                        return(true);
+                     },
+          onShow:    function(state, markup) {
+                        console.log("Step 3 onShow() called. State:", state);
+                        markup.find(".wizardry-previous-control").attr("disabled", "");
+                        markup.find(".wizardry-restart-control").attr("disabled", "");
+                     },
+          ui:        {template: {selector: "template1"}}},
+         {onEnter:   function(state) {
+                        console.log("Step 2 onEnter() called. State:", state);
+                        state.step = 2;
+                        state.message = "This is step 2.";
+                     },
+          onExit:    function(state) {
+                        console.log("Step 2 onExit() called. State:", state);
+                        return(true);
+                     },
+          ui:        {template: {selector: "template1"}}},
+         {onEnter:   function(state) {
+                        console.log("Step 3 onEnter() called. State:", state);
+                        state.step = 3;
+                        state.message = "This is step 3.";
+                     },
+          onExit:    function(state) {
+                        console.log("Step 3 onExit() called. State:", state);
+                        return(true);
+                     },
+          ui:        {template: {selector: "template1"}}},
+         {onEnter:   function(state) {
+                        console.log("Step 4 onEnter() called. State:", state);
+                        state.step = 4;
+                        state.message = "This is step 4.";
+                     },
+          onExit:    function(state) {
+                        console.log("Step 4 onExit() called. State:", state);
+                        return(true);
+                     },
+          ui:        {template: {selector: "template1"}}},
+         {onEnter:   function(state) {
+                        console.log("Step 5 onEnter() called. State:", state);
+                        state.step = 5;
+                        state.message = "This is step 5, all done.";
+                     },
+          onShow:    function(state, markup) {
+                        console.log("Step 5 onShow() called. State:", state);
+                        markup.find(".wizardry-next-control").attr("disabled", "");
+                     },
+          ui:        {template: {selector: "template1"}}}
+      ];
+
+      $("#container").wizardry(configuration);
+   </script>
+</body>
+</html>
