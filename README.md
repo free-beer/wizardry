@@ -99,6 +99,7 @@ complete configuration includes the following elements...
    onEnter:       function(state) {/* Function called after step is entered. */},
    onExit:        function(state) {/* Function called before step is exited. */},
    onShow:        function(state, ui) {/* Function called after step UI deployed. */},
+   templateData:  function() {/* Function called to generate the data used for the template. */},
    ui:            {template: {selector: "TemplateElementId"}}}
 ```
 
@@ -129,6 +130,17 @@ below...
       for a step has been deployed to the page. This is an opportunity to do
       additional work such as setting the current control focus. This function
       is passed the control state as a parameter.
+
+    * templateData - If present this function will be called when generating
+      the context used while populating the UI template. If this function is
+      provided then a combination of the state object and return value from
+      this function will provide the context in which the template will be
+      generated (be careful about object property names as those in the state
+      object will be given priority over values in the object returned from
+      this function). If not present then the current state object is used
+      template generation only. This function allows for the addition of
+      temporary data elements to a template context, stuff that you perhaps
+      don't want to pollute the state with.
 
 The ```ui``` entry is a little more complicated so it will be expanded upon
 separately. When specifying the UI for a step you can choose from a number of

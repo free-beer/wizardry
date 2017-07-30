@@ -26,13 +26,13 @@ $.fn.wizardry = function(configuration) {
                                                             });
                                           }
                                        },
-                    backward:          function(context, state) {
+                    backward:          function(context) {
                                           console.log("Previous step regression requested, checking if a step is available. Progression:", context.progression);
                                           if(context.progression.length > 0) {
                                              var newOffset = context.progression.pop();
 
                                              console.log("Rewinding to step offset " + newOffset + ".");
-                                             api.gotoOffset(context, context.state, newOffset);
+                                             api.gotoOffset(context, newOffset);
                                           } else {
                                              console.log("No previous step available, doing nothing.");
                                           }
@@ -68,25 +68,21 @@ $.fn.wizardry = function(configuration) {
 
                                           return(template);
                                        },
-                    forward:           function(context, state) {
+                    forward:           function(context) {
                                           var step      = api.currentStep(context),
                                               permitted = true;
 
                                           console.log("Next step progression requested. Starting offset is " + context.offset + ".");
                                           if(step.onExit) {
                                              console.log("Step has progression validator, calling it.");
-                                             permitted = (step.onExit(target, state) === true);
+                                             permitted = (step.onExit(context.state, target, step) === true);
                                           }
 
                                           if(permitted) {
-                                             var offset = context.offset;
+                                             var offset     = context.offset,
+                                                 progressed = true;
 
                                              console.log("Progression to next step permitted, checking if a step is available.");
-                                             if(context.progression.length === 0 || context.progression[context.progression.length - 1] !== offset) {
-                                                console.log("Pushing step offset " + offset + " on to the progression list.");
-                                                context.progression.push(offset);
-                                             }
-
                                              if(step.getNextStepId) {
                                                 var newId  = step.getNextStepId(state);
 
@@ -94,13 +90,23 @@ $.fn.wizardry = function(configuration) {
                                                    throw("Invalid step id '" + newId + "' returned by getNextStepId() call for step offset " + context.offset);
                                                 }
                                                 console.log("Progressing to step id '" + newId + "'.");
-                                                api.gotoId(context, context.state, newId);
+                                                api.gotoId(context, newId);
+                                                progressed = true;
                                              } else {
                                                 newOffset = context.offset + 1;
                                                 if(api.isValidOffset(context, newOffset)) {
-                                                   api.gotoOffset(context, context.state, newOffset)
+                                                   api.gotoOffset(context, newOffset);
+                                                   progressed = true;
                                                 } else {
                                                    console.log("Unable to move forward as there are no further steps.");
+                                                }
+                                             }
+
+                                             console.log("Checking if we actually progressed a step.");
+                                             if(progressed) {
+                                                if(context.progression.length === 0 || context.progression[context.progression.length - 1] !== offset) {
+                                                   console.log("Pushing step offset " + offset + " on to the progression list.");
+                                                   context.progression.push(offset);
                                                 }
                                              }
                                           } else {
@@ -111,17 +117,17 @@ $.fn.wizardry = function(configuration) {
                                           var element = $("#" + selector);
 
                                           if(element.length === 0) {
-                                             throw("Invalid template selector '" + step.ui.template.selector + "' specified for step offset " + context.offset + ".");
+                                             throw("Invalid template selector '" + selector + "' specified for step offset " + context.offset + ".");
                                           }
                                           return(element.html());
                                        },
-                    gotoId:            function(context, state, id) {
+                    gotoId:            function(context, id) {
                                           if(!api.idExists(context, id)) {
                                              throw("Move to step id '" + id + "' requested but there is no step possessing that id.");
                                           }
-                                          api.gotoOffset(context, state, api.offsetForId(context, id));
+                                          api.gotoOffset(context, api.offsetForId(context, id));
                                        },
-                    gotoOffset:        function(context, state, offset) {
+                    gotoOffset:        function(context, offset) {
                                           var step;
 
                                           console.log("Request to move to step offset " + offset + " received.");
@@ -132,9 +138,9 @@ $.fn.wizardry = function(configuration) {
                                           step           = api.getStep(context, offset);
                                           context.offset = offset;
                                           if(step.onEnter) {
-                                             step.onEnter(context.state);
+                                             step.onEnter(context.state, step);
                                           }
-                                          api.showUI(context, context.state);
+                                          api.showUI(context);
                                        },
                     idExists:          function(context, id) {
                                           return(context.configuration.findIndex(function(entry) {entry.id === id}) !== -1);
@@ -173,14 +179,18 @@ $.fn.wizardry = function(configuration) {
                                           return(offset);
                                        },
                     renderTemplate:    function(source, context) {
-                                          console.log("Rendering the template with the state:", context.state);
-                                          return($(Mustache.render(source, context.state)));
+                                          var step = api.currentStep(context),
+                                              data = (step.templateData ? step.templateData() : {});
+
+                                          data = jQuery.merge(data, context.state);
+                                          console.log("Rendering the template with the data:", data);
+                                          return($(Mustache.render(source, data)));
                                        },
-                    restart:           function(context, state) {
+                    restart:           function(context) {
                                           context.state = (context.initializeState ? context.initializeState(state) : {});
-                                          api.gotoOffset(context, state, 0);
+                                          api.gotoOffset(context, 0);
                                        },
-                    showUI:            function(context, state) {
+                    showUI:            function(context) {
                                           var template = api.renderTemplate(api.fetchTemplate(context), context),
                                               step     = api.currentStep(context);
 
@@ -211,43 +221,44 @@ $.fn.wizardry = function(configuration) {
                                              onHidden();
                                           }
                                        }},
-       context   = {configuration: configuration,
-                    offset:        0,
-                    progression:   [],
-                    state:         {},
-                    target:        $(this)},
-       listeners = {backward: function(event) {
+       context   = null,
+       listeners = {backward: function(context) {
                                  console.log("Backward event triggered for step plugin instance.");
-                                 api.backward(context, context.state);
+                                 api.backward(context);
                               },
-                    cancel:   function(event) {
+                    cancel:   function(context) {
                                  console.log("Cancel event triggered for step plugin instance.");
                                  if(context.configuration.events.cancel) {
                                     console.log("Found custom cancellation handler, calling it.");
                                     context.configuration.events.cancel(context.state);
                                  }
                               },
-                    forward:  function(event) {
+                    forward:  function(context) {
                                  console.log("Forward event triggered for step plugin.");
-                                 api.forward(context, context.state);
+                                 api.forward(context);
                               },
-                    restart:  function(event) {
+                    restart:  function(context) {
                                  console.log("Restart event triggered for step plugin instance.");
                                  api.restart(context, context.state);
                               }},
-       state     = context.state,
        target    = $(this);
 
    if(!configuration || configuration.length === 0) {
       throw("No configuration or empty configuration specified for stepped control.");
    }
 
+   context = {configuration: configuration,
+              offset:        0,
+              progression:   [],
+              state:         {},
+              target:        $(this)};
+
    // Set up event listeners.
-   target.on("wizardry.backward", listeners.backward);
-   target.on("wizardry.cancel", listeners.cancel);
-   target.on("wizardry.forward", listeners.forward);
-   target.on("wizardry.restart", listeners.restart);
+   target.on("wizardry.backward", function() {listeners.backward(context);});
+   target.on("wizardry.cancel", function() {listeners.cancel(context);});
+   target.on("wizardry.forward", function() {listeners.forward(context);});
+   target.on("wizardry.restart", function() {listeners.restart(context);});
 
    // Kick things off.
-   api.restart(context, context.state);
+   api.restart(context);
 };
