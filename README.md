@@ -137,7 +137,7 @@ below...
       this function will provide the context in which the template will be
       generated (be careful about object property names as those in the state
       object will be given priority over values in the object returned from
-      this function). If not present then the current state object is used
+      this function). If not present then the current state object is used in
       template generation only. This function allows for the addition of
       temporary data elements to a template context, stuff that you perhaps
       don't want to pollute the state with.
@@ -155,8 +155,10 @@ the page.  Alternatively you can load the template from a remote URL. An example
 for this configuration is given below...
 
 ```javascript
-   ...
-   ui: {method: "GET", url: "http://myserver.com/path/to/template"}}
+   {
+    ...
+    ui: {method: "GET", url: "http://myserver.com/path/to/template"}
+   }
 ```
 
 Here the ```ui``` entry has two keys, ```method``` and ```url```. The first
