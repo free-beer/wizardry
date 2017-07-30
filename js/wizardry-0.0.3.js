@@ -180,9 +180,13 @@ $.fn.wizardry = function(configuration) {
                                        },
                     renderTemplate:    function(source, context) {
                                           var step = api.currentStep(context),
-                                              data = (step.templateData ? step.templateData() : {});
+                                              data = {};
 
-                                          data = jQuery.merge(data, context.state);
+                                          if(step.templateData) {
+                                            data = step.templateData(context.state);
+                                          }
+
+                                          data = jQuery.extend(data, context.state);
                                           console.log("Rendering the template with the data:", data);
                                           return($(Mustache.render(source, data)));
                                        },

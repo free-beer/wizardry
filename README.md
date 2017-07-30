@@ -99,7 +99,7 @@ complete configuration includes the following elements...
    onEnter:       function(state) {/* Function called after step is entered. */},
    onExit:        function(state) {/* Function called before step is exited. */},
    onShow:        function(state, ui) {/* Function called after step UI deployed. */},
-   templateData:  function() {/* Function called to generate the data used for the template. */},
+   templateData:  function(state) {/* Function called to generate the data used for the template. */},
    ui:            {template: {selector: "TemplateElementId"}}}
 ```
 
